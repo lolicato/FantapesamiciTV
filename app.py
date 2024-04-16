@@ -6,22 +6,41 @@ def local_css():
     st.markdown(
         f"""
         <style>
-            /* Change the background color of the sidebar */
+            /* Default styles for desktop */
             .stApp {{
                 --sidebar-bg-color: black; /* Streamlit's variable for sidebar background */
             }}
-
-            /* Change sidebar text and other elements color */
             .stSidebar .css-1d391kg, .stSidebar .css-1l02zno, .stSidebar .st-bx, .stSidebar .st-cx {{
                 color: white;
             }}
-
-            /* Add styling for the logo in the sidebar */
             .logo {{
                 height: 200px;
                 width: auto;
-                display: block; /* Ensures it takes the full width of the sidebar */
-                margin: 20px auto; /* Center the logo horizontally */
+                display: block;
+                margin: 20px auto;
+            }}
+
+            /* Media queries for tablets */
+            @media (max-width: 768px) {{
+                .stApp {{
+                    --sidebar-bg-color: #333;
+                }}
+                .logo {{
+                    height: 150px; /* Smaller logo for smaller devices */
+                }}
+            }}
+
+            /* Media queries for smartphones */
+            @media (max-width: 480px) {{
+                .stApp {{
+                    --sidebar-bg-color: #666;
+                }}
+                .stSidebar .css-1d391kg, .stSidebar .css-1l02zno, .stSidebar .st-bx, .stSidebar .st-cx {{
+                    color: #ccc;
+                }}
+                .logo {{
+                    height: 100px; /* Even smaller logo for smartphones */
+                }}
             }}
         </style>
         """,
@@ -35,6 +54,7 @@ def local_css():
         """,
         unsafe_allow_html=True
     )
+
 
 # Apply the custom CSS
 local_css()
@@ -162,17 +182,27 @@ def main_page():
 
 def get_competition_stats():
     try:
+        # Define lists for each category
+        lega_competitions = ["LEGA A", "LEGA B", "LEGA C"]
+        final_eight_competitions = ["Final Eight Gold", "Final Eight Silver", "Final Eight Bronze", "GOLDEN FINAL", "SILVER FINAL", "BRONZE FINAL"]
+        amichevole = ["Amichevole"]
+        coppa_delle_leghe = ["COPPA DELLE LEGHE"]
+
+        # SQL query that filters for specific competitions, ensuring placeholders match the number of competitions
         c.execute('''
             SELECT player1, competition_type, COUNT(*) as count
             FROM match_data
+            WHERE competition_type IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             GROUP BY player1, competition_type
             ORDER BY player1
-        ''')
+        ''', (*lega_competitions, *final_eight_competitions, *amichevole, *coppa_delle_leghe))
+
         raw_data = c.fetchall()
         return raw_data
     except Exception as e:
         st.error(f"Failed to fetch competition stats: {e}")
         return []
+
 
 def stats_page():
     st.title('Statistiche delle Dirette Stagione 1')
@@ -183,9 +213,19 @@ def stats_page():
         from collections import defaultdict
         import pandas as pd
 
-        competition_counts = defaultdict(dict)
+        competition_counts = defaultdict(lambda: defaultdict(int))
         for player, competition, count in data:
-            competition_counts[player][competition] = count
+            category = None
+            if competition in ["LEGA A", "LEGA B", "LEGA C"]:
+                category = "LEGA"
+            elif competition in ["Final Eight Gold", "Final Eight Silver", "Final Eight Bronze", "GOLDEN FINAL", "SILVER FINAL", "BRONZE FINAL"]:
+                category = "Final Eight"
+            elif competition == "Amichevole":
+                category = "Amichevole"
+            elif competition == "COPPA DELLE LEGHE":
+                category = "COPPA DELLE LEGHE"
+            if category:
+                competition_counts[player][category] += count
 
         # Convert the dictionary to a DataFrame for display
         df = pd.DataFrame.from_dict(competition_counts, orient='index').fillna(0).astype(int)
@@ -214,7 +254,7 @@ def form_page():
             st.success('Submission successful!')
 
 st.sidebar.title('Menu')
-page = st.sidebar.radio('', ('Live Streaming', 'Carica Link', 'Statistiche'))
+page = st.sidebar.radio(' ', ('Live Streaming', 'Carica Link', 'Statistiche'))
 
 # Add to the main control flow in your Streamlit app
 if page == 'Live Streaming':
