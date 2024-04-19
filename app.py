@@ -3,10 +3,7 @@ import sqlite3
 import re
 import locale
 
-try:
-    locale.setlocale(locale.LC_ALL, 'it_IT')
-except Exception as e:
-    st.error(f"Failed to set locale: {e}")
+
 
 
 def local_css():
