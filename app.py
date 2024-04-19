@@ -1,8 +1,7 @@
 import streamlit as st
 import sqlite3
 import re
-import locale
-locale.setlocale(locale.LC_ALL, 'it_IT')  # Set the locale to Italian for currency formatting
+
 
 
 def local_css():
