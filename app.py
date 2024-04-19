@@ -2,8 +2,14 @@ import streamlit as st
 import sqlite3
 import re
 
-export LC_ALL="en_US.UTF-8"
-export LANG="en_US.UTF-8"
+
+
+try:
+    locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+except locale.Error:
+    locale.setlocale(locale.LC_ALL, '')  # Set to the default locale
+
+
 
 
 
