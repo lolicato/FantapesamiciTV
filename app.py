@@ -2,6 +2,8 @@ import streamlit as st
 import sqlite3
 import re
 
+export LC_ALL="en_US.UTF-8"
+export LANG="en_US.UTF-8"
 
 
 
