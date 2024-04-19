@@ -1,6 +1,9 @@
 import streamlit as st
 import sqlite3
 import re
+import locale
+locale.setlocale(locale.LC_ALL, 'it_IT')  # Set the locale to Italian for currency formatting
+
 
 def local_css():
     st.markdown(
@@ -253,8 +256,51 @@ def form_page():
             add_data(youtube_link, competition_type, player1, player2)
             st.success('Submission successful!')
 
+
+def irpef_calculation_page():
+    st.title('Calcolo IRPEF')
+    team_names = [team[0] for team in load_teams()]  # Load team names from the clubs.txt file
+    team_name = st.selectbox('Nome della squadra', team_names)
+    average_age = st.number_input('Età media della squadra', min_value=0.0, format="%.1f")
+    
+    # Input for salary
+    salary_input = st.text_input("Monte ingaggio della squadra (€)", value="")
+
+    # Format input on the fly
+    if salary_input:
+        try:
+            # Remove any non-numeric characters for calculation purposes
+            salary = float(salary_input.replace(".", "").replace(",", ""))
+            formatted_salary = f"{salary:,.0f}".replace(",", ".")
+            st.write("Monte ingaggio inserito: €" + formatted_salary)
+        except ValueError:
+            st.error("Inserire un numero valido.")
+    else:
+        salary = 0
+
+    calculate_button = st.button('Calcola')
+
+    if calculate_button:
+        tax_rate = 0
+        if average_age <= 22:
+            tax_rate = 0
+        elif 22.1 <= average_age <= 23:
+            tax_rate = 5
+        elif 23.1 <= average_age <= 24:
+            tax_rate = 10
+        elif 24.1 <= average_age <= 25:
+            tax_rate = 15
+        elif 25.1 <= average_age <= 26:
+            tax_rate = 20
+        elif average_age > 26.1:
+            tax_rate = 25
+
+        tax_to_pay = (tax_rate / 100) * salary
+        st.success(f"La tua IRPEF da pagare ammonta a €{tax_to_pay:,.0f} ({tax_rate}% del monte ingaggio).".replace(",", "."))
+
+# Add to the sidebar navigation
 st.sidebar.title('Menu')
-page = st.sidebar.radio(' ', ('Live Streaming', 'Carica Link', 'Statistiche'))
+page = st.sidebar.radio(' ', ('Live Streaming', 'Carica Link', 'Statistiche', 'Calcolo IRPEF'))
 
 # Add to the main control flow in your Streamlit app
 if page == 'Live Streaming':
@@ -263,3 +309,7 @@ elif page == 'Carica Link':
     form_page()
 elif page == 'Statistiche':
     stats_page()
+elif page == 'Calcolo IRPEF':
+    irpef_calculation_page()
+
+
