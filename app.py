@@ -1,7 +1,7 @@
 import streamlit as st
 import sqlite3
 import re
-
+import os
 
 
 
@@ -298,6 +298,21 @@ def irpef_calculation_page():
 
         tax_to_pay = (tax_rate / 100) * salary
         st.success(f"La tua IRPEF da pagare ammonta a €{tax_to_pay:,.0f} ({tax_rate}% del monte ingaggio).".replace(",", "."))
+
+# Add a download button for the database
+@st.cache(allow_output_mutation=True)
+def get_binary_file_downloader_html(bin_file):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    bin_str = base64.b64encode(data).decode()
+    href = f'<a href="data:application/octet-stream;base64,{bin_str}" download="{os.path.basename(bin_file)}">Download DB</a>'
+    return href
+
+# Show the download link
+db_path = 'matches.db'
+if os.path.exists(db_path):
+    st.sidebar.markdown(get_binary_file_downloader_html(db_path), unsafe_allow_html=True)
+
 
 # Add to the sidebar navigation
 st.sidebar.title('Menu')
