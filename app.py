@@ -305,18 +305,6 @@ def irpef_calculation_page():
         tax_to_pay = (tax_rate / 100) * salary
         st.success(f"La tua IRPEF da pagare ammonta a €{tax_to_pay:,.0f} ({tax_rate}% del monte ingaggio).".replace(",", "."))
 
-# Database file path
-db_file_path = 'matches.db'
-
-# Check if the file exists before creating a download button
-if os.path.exists(db_file_path):
-    with open(db_file_path, "rb") as fp:
-        btn = st.sidebar.download_button(
-            label="Download Database",
-            data=fp,
-            file_name="matches.db",
-            mime="application/octet-stream"
-        )
 
 
 def delete_invalid_entries():
@@ -340,6 +328,9 @@ def admin_page():
         delete_invalid_entries()
 
 
+# Database file path
+db_file_path = 'matches.db'
+
 # Add to the sidebar navigation
 st.sidebar.title('Menu')
 page = st.sidebar.radio(' ', ('Live Streaming', 'Carica Link', 'Statistiche', 'Calcolo IRPEF'))
@@ -352,11 +343,26 @@ password = st.sidebar.text_input("Enter password:", type='password')
 if password == CORRECT_PASSWORD:
     if st.sidebar.button("Delete Invalid YouTube Entries"):
         delete_invalid_entries()
+
+
+
+
+    # Check if the file exists before creating a download button
+    if os.path.exists(db_file_path):
+        with open(db_file_path, "rb") as fp:
+            btn = st.sidebar.download_button(
+                label="Download Database",
+                data=fp,
+                file_name="matches.db",
+                mime="application/octet-stream"
+            )
+
+
 else:
     if password:
         st.sidebar.error("Password incorrect, please try again.")
 
-        
+
 # Add to the main control flow in your Streamlit app
 if page == 'Live Streaming':
     main_page()
