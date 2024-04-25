@@ -134,7 +134,7 @@ def view_all_data():
 
 
 def extract_youtube_id(url):
-    if 'youtu.be' in url:
+    if 'youtube' in url:
         return url.split('/')[-1]
     regex = r"(?<=v=)[^&#]+"
     matches = re.search(regex, url)
