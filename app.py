@@ -247,15 +247,21 @@ def form_page():
     st.title('Match Submission Form')
     competitions = load_competitions()  # Load competition names
     youtube_link = st.text_input('YouTube Link for the Online Match', key='youtube_link')
+    
     with st.form(key='match_form'):
         competition_type = st.selectbox('Type of Competition', competitions)  # Use loaded competitions for dropdown
         team_names = [team[0] for team in load_teams()]
         player1 = st.selectbox('Casa', team_names)
         player2 = st.selectbox('Trasferta', team_names)
         submitted = st.form_submit_button('Submit')
+        
         if submitted:
-            add_data(youtube_link, competition_type, player1, player2)
-            st.success('Submission successful!')
+            if not youtube_link.strip():  # Check if YouTube link is empty or just whitespace
+                st.error('Please enter a valid YouTube link.')
+            else:
+                add_data(youtube_link, competition_type, player1, player2)
+                st.success('Submission successful!')
+
 
 
 def irpef_calculation_page():
@@ -313,10 +319,44 @@ if os.path.exists(db_file_path):
         )
 
 
+def delete_invalid_entries():
+    try:
+        # SQL DELETE statement to remove rows where the YouTube link is empty or not valid
+        c.execute("DELETE FROM match_data WHERE youtube_link IS NULL OR youtube_link = '' OR youtube_link NOT LIKE '%youtube.com/%'")
+        conn.commit()
+        st.success("Invalid entries have been successfully deleted.")
+    except Exception as e:
+        st.error(f"Failed to delete invalid entries: {e}")
+
+
+# Define the correct password
+CORRECT_PASSWORD = 'admin'
+
+
+def admin_page():
+    st.title("Admin Tools")
+    
+    if st.button("Delete Invalid YouTube Entries"):
+        delete_invalid_entries()
+
+
 # Add to the sidebar navigation
 st.sidebar.title('Menu')
 page = st.sidebar.radio(' ', ('Live Streaming', 'Carica Link', 'Statistiche', 'Calcolo IRPEF'))
 
+# Add to the sidebar navigation
+st.sidebar.title('Admin Tools')
+# Password input by the user
+password = st.sidebar.text_input("Enter password:", type='password')
+
+if password == CORRECT_PASSWORD:
+    if st.sidebar.button("Delete Invalid YouTube Entries"):
+        delete_invalid_entries()
+else:
+    if password:
+        st.sidebar.error("Password incorrect, please try again.")
+
+        
 # Add to the main control flow in your Streamlit app
 if page == 'Live Streaming':
     main_page()
