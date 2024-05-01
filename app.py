@@ -344,6 +344,7 @@ def admin_page():
     elif st.sidebar.button("View All Data"):
         data = view_all_data()
         st.write(data)  # This will display the data in the main page area.
+        
 
 # Database file path
 db_file_path = 'matches.db'
