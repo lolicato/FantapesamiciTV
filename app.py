@@ -163,6 +163,9 @@ def main_page():
     # Fetch data based on filters
     data = view_filtered_data(selected_player, selected_competition)
 
+    st.markdown("---")
+
+
     team_dict = dict(load_teams())
 
     for index, entry in enumerate(data):
