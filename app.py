@@ -147,7 +147,25 @@ def main_page():
     st.title('FantaPesAmici TV')
     st.markdown("---")
 
-    data = view_all_data()
+    # Load competitions and teams
+    competitions = load_competitions()
+    team_names = [team[0] for team in load_teams()]
+
+    # Filtering options
+    st.markdown("""
+    <h2 style='font-weight: bold; font-size: 24px;'>Opzioni di Filtro</h2>
+    """, unsafe_allow_html=True)
+
+
+    selected_player = st.selectbox("Select Player", ['All'] + team_names)
+    selected_competition = st.selectbox("Select Competition Type", ['All'] + competitions)
+
+    # Automatically update the display as filters change
+    data = view_filtered_data(selected_player, selected_competition)
+
+    st.markdown("---")
+
+
     team_dict = dict(load_teams())
 
     for index, entry in enumerate(data):
@@ -156,7 +174,7 @@ def main_page():
         if youtube_id:
             logo1 = team_dict.get(player1, "")
             logo2 = team_dict.get(player2, "")
-            
+            # HTML for displaying players and match type
             players_matchup_html = f"""
             <div style="color: black; font-size: 18px; margin-bottom: 10px;">
                 {competition_type}
@@ -171,7 +189,6 @@ def main_page():
             """
             st.markdown(players_matchup_html, unsafe_allow_html=True)
             
-            
             # Embed YouTube video with custom margin for spacing
             youtube_iframe = f"""
             <div style="margin-bottom: 20px;">
@@ -180,8 +197,21 @@ def main_page():
             {created_at}
             """
             st.markdown(youtube_iframe, unsafe_allow_html=True)
-            
             st.markdown("---")  # Horizontal line for separation between entries
+
+def view_filtered_data(player, competition):
+    query = 'SELECT youtube_link, competition_type, player1, player2, created_at FROM match_data WHERE 1=1'
+    params = []
+    if player != 'All':
+        query += ' AND (player1 = ? OR player2 = ?)'
+        params.extend([player, player])
+    if competition != 'All':
+        query += ' AND competition_type = ?'
+        params.append(competition)
+
+    c.execute(query, params)
+    return c.fetchall()
+
 
 
 def get_competition_stats():
