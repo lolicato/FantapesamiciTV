@@ -147,24 +147,21 @@ def main_page():
     st.title('FantaPesAmici TV')
     st.markdown("---")
 
+    # Display filter options heading in bold and larger font
+    st.markdown("""
+        <h2 style='font-weight: bold; font-size: 24px;'>Opzioni di Filtro</h2>
+        """, unsafe_allow_html=True)
+
     # Load competitions and teams
     competitions = load_competitions()
     team_names = [team[0] for team in load_teams()]
 
     # Filtering options
-    st.markdown("""
-    <h2 style='font-weight: bold; font-size: 24px;'>Opzioni di Filtro</h2>
-    """, unsafe_allow_html=True)
+    selected_player = st.selectbox("Select Player", ['All'] + team_names, index=0)
+    selected_competition = st.selectbox("Select Competition Type", ['All'] + competitions, index=0)
 
-
-    selected_player = st.selectbox("Select Player", ['All'] + team_names)
-    selected_competition = st.selectbox("Select Competition Type", ['All'] + competitions)
-
-    # Automatically update the display as filters change
+    # Fetch data based on filters
     data = view_filtered_data(selected_player, selected_competition)
-
-    st.markdown("---")
-
 
     team_dict = dict(load_teams())
 
@@ -200,17 +197,25 @@ def main_page():
             st.markdown("---")  # Horizontal line for separation between entries
 
 def view_filtered_data(player, competition):
-    query = 'SELECT youtube_link, competition_type, player1, player2, created_at FROM match_data WHERE 1=1'
+    query = 'SELECT youtube_link, competition_type, player1, player2, created_at FROM match_data'
     params = []
+    
+    conditions = []
     if player != 'All':
-        query += ' AND (player1 = ? OR player2 = ?)'
+        conditions.append('(player1 = ? OR player2 = ?)')
         params.extend([player, player])
     if competition != 'All':
-        query += ' AND competition_type = ?'
+        conditions.append('competition_type = ?')
         params.append(competition)
+
+    if conditions:
+        query += ' WHERE ' + ' AND '.join(conditions)
+    
+    query += ' ORDER BY created_at DESC'
 
     c.execute(query, params)
     return c.fetchall()
+
 
 
 
