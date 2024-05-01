@@ -3,26 +3,26 @@ import sqlite3
 import re
 import os
 
-def test:
+def test():
     st.markdown("ffff")
 
-def test:
+def test1():
     st.markdown("ffff")
 
-def test:
+def test2():
     st.markdown("ffff")
 
-def test:
+def test3():
     st.markdown("ffff")
 
-def test:
+def test4():
     st.markdown("ffff")
 
 
-def test:
+def test5():
     st.markdown("ffff")
 
-    
+
 
 def local_css():
     st.markdown(
