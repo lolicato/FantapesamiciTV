@@ -3,24 +3,6 @@ import sqlite3
 import re
 import os
 
-def test():
-    st.markdown("ffff")
-
-def test1():
-    st.markdown("ffff")
-
-def test2():
-    st.markdown("ffff")
-
-def test3():
-    st.markdown("ffff")
-
-def test4():
-    st.markdown("ffff")
-
-
-def test5():
-    st.markdown("ffff")
 
 
 
@@ -152,15 +134,12 @@ def view_all_data():
 
 
 def extract_youtube_id(url):
-    if 'youtu.be' in url:
-        # Extracts the video ID directly from the URL path for shortened YouTube URLs
+    if 'youtube' in url:
         return url.split('/')[-1]
-    elif 'youtube' in url:
-        # This will catch any other YouTube URL containing the video ID in the standard format
-        regex = r"(?<=v=)[^&#]+"
-        matches = re.search(regex, url)
-        if matches:
-            return matches.group(0)
+    regex = r"(?<=v=)[^&#]+"
+    matches = re.search(regex, url)
+    if matches:
+        return matches.group(0)
     return None
 
 
