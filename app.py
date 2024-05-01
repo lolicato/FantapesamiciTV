@@ -134,13 +134,17 @@ def view_all_data():
 
 
 def extract_youtube_id(url):
-    if 'youtube' in url:
+    if 'youtu.be' in url:
+        # Extracts the video ID directly from the URL path for shortened YouTube URLs
         return url.split('/')[-1]
-    regex = r"(?<=v=)[^&#]+"
-    matches = re.search(regex, url)
-    if matches:
-        return matches.group(0)
+    elif 'youtube' in url:
+        # This will catch any other YouTube URL containing the video ID in the standard format
+        regex = r"(?<=v=)[^&#]+"
+        matches = re.search(regex, url)
+        if matches:
+            return matches.group(0)
     return None
+
 
 
 def main_page():
