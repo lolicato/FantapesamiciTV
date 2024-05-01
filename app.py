@@ -306,6 +306,17 @@ def irpef_calculation_page():
         st.success(f"La tua IRPEF da pagare ammonta a €{tax_to_pay:,.0f} ({tax_rate}% del monte ingaggio).".replace(",", "."))
 
 
+def delete_youtube_entry(youtube_link):
+    # Assuming there is a column named 'youtube_link' in your table
+    conn = sqlite3.connect('matches.db')
+    c = conn.cursor()
+    # Use parameter substitution to safely delete the entry
+    c.execute("DELETE FROM match_data WHERE youtube_link=?", (youtube_link,))
+    conn.commit()
+    conn.close()
+    st.success("Entry deleted successfully.")
+
+
 
 def delete_invalid_entries():
     try:
@@ -323,10 +334,16 @@ CORRECT_PASSWORD = 'admin'
 
 def admin_page():
     st.title("Admin Tools")
-    
-    if st.button("Delete Invalid YouTube Entries"):
-        delete_invalid_entries()
 
+    # Allow admins to delete specific YouTube entries
+    youtube_link = st.text_input("Enter the YouTube link to delete:")
+    if st.button("Delete YouTube Entry"):
+        delete_youtube_entry(youtube_link)
+
+
+    elif st.sidebar.button("View All Data"):
+        data = view_all_data()
+        st.write(data)  # This will display the data in the main page area.
 
 # Database file path
 db_file_path = 'matches.db'
@@ -340,12 +357,10 @@ st.sidebar.title('Admin Tools')
 # Password input by the user
 password = st.sidebar.text_input("Enter password:", type='password')
 
+CORRECT_PASSWORD = "admin"  # You need to define this variable
+
 if password == CORRECT_PASSWORD:
-    if st.sidebar.button("Delete Invalid YouTube Entries"):
-        delete_invalid_entries()
-
-
-
+    admin_page()
 
     # Check if the file exists before creating a download button
     if os.path.exists(db_file_path):
@@ -356,11 +371,10 @@ if password == CORRECT_PASSWORD:
                 file_name="matches.db",
                 mime="application/octet-stream"
             )
-
-
 else:
     if password:
         st.sidebar.error("Password incorrect, please try again.")
+
 
 
 # Add to the main control flow in your Streamlit app
