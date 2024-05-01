@@ -161,6 +161,8 @@ def main_page():
     selected_competition = st.selectbox("Select Competition Type", ['All'] + competitions, index=0)
 
     st.markdown("---")
+    st.markdown("---")
+
 
 
     # Fetch data based on filters
