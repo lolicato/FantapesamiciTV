@@ -160,10 +160,12 @@ def main_page():
     selected_player = st.selectbox("Select Player", ['All'] + team_names, index=0)
     selected_competition = st.selectbox("Select Competition Type", ['All'] + competitions, index=0)
 
+    st.markdown("---")
+
+
     # Fetch data based on filters
     data = view_filtered_data(selected_player, selected_competition)
 
-    st.markdown("---")
 
 
     team_dict = dict(load_teams())
