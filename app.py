@@ -2,17 +2,16 @@ import streamlit as st
 import sqlite3
 import re
 import os
+from collections import defaultdict
+import pandas as pd
 
-
-
-
+# CSS Customization
 def local_css():
     st.markdown(
         f"""
         <style>
-            /* Default styles for desktop */
             .stApp {{
-                --sidebar-bg-color: black; /* Streamlit's variable for sidebar background */
+                --sidebar-bg-color: black;
             }}
             .stSidebar .css-1d391kg, .stSidebar .css-1l02zno, .stSidebar .st-bx, .stSidebar .st-cx {{
                 color: white;
@@ -23,18 +22,14 @@ def local_css():
                 display: block;
                 margin: 20px auto;
             }}
-
-            /* Media queries for tablets */
             @media (max-width: 768px) {{
                 .stApp {{
                     --sidebar-bg-color: #333;
                 }}
                 .logo {{
-                    height: 150px; /* Smaller logo for smaller devices */
+                    height: 150px;
                 }}
             }}
-
-            /* Media queries for smartphones */
             @media (max-width: 480px) {{
                 .stApp {{
                     --sidebar-bg-color: #666;
@@ -43,15 +38,13 @@ def local_css():
                     color: #ccc;
                 }}
                 .logo {{
-                    height: 100px; /* Even smaller logo for smartphones */
+                    height: 100px;
                 }}
             }}
         </style>
         """,
         unsafe_allow_html=True
     )
-
-    # Add logo to the sidebar
     st.sidebar.markdown(
         f"""
         <img src="https://www.fantamanagerleague.it/leghe/fantapesamici/images/headerlogo.PNG" alt="Logo" class="logo">
@@ -59,16 +52,12 @@ def local_css():
         unsafe_allow_html=True
     )
 
-
-# Apply the custom CSS
 local_css()
 
-
-# Database setup
-conn = sqlite3.connect('matches.db', check_same_thread=False)  # Allow multi-thread access if needed
-c = conn.cursor()
-
-def create_table():
+# Database Setup
+def init_db():
+    conn = sqlite3.connect('matches.db', check_same_thread=False)
+    c = conn.cursor()
     try:
         c.execute('''
             CREATE TABLE IF NOT EXISTS match_data(
@@ -81,136 +70,106 @@ def create_table():
         ''')
     except Exception as e:
         st.error(f"Failed to create table: {e}")
+    return conn, c
 
-
-create_table()
-
+conn, c = init_db()
 
 @st.cache_data
 def load_teams():
+    teams = []
     try:
-        teams = []
         with open('clubs.txt', 'r') as file:
-            lines = file.readlines()
-            for line in lines:
+            for line in file:
                 parts = line.strip().split(',')
                 if len(parts) == 2:
-                    team_name = parts[0].strip().strip('"')
-                    logo_url = parts[1].strip().strip('"')
-                    teams.append((team_name, logo_url))
-        return teams
+                    teams.append((parts[0].strip().strip('"'), parts[1].strip().strip('"')))
     except Exception as e:
         st.error(f"Failed to load teams: {e}")
-        return []
+    return teams
 
+@st.cache_data
 def load_competitions():
+    competitions = []
     try:
         with open('competitions.txt', 'r') as file:
-            competitions = [line.strip().strip('"') for line in file.readlines()]
-        return competitions
+            competitions = [line.strip().strip('"') for line in file]
     except Exception as e:
         st.error(f"Failed to load competitions: {e}")
-        return []
+    return competitions
 
 def add_data(youtube_link, competition_type, player1, player2):
     try:
-        c.execute('''
-            INSERT INTO match_data (youtube_link, competition_type, player1, player2)
-            VALUES (?, ?, ?, ?)
-        ''', (youtube_link, competition_type, player1, player2))
-        conn.commit()
+        with conn:
+            c.execute('''
+                INSERT INTO match_data (youtube_link, competition_type, player1, player2)
+                VALUES (?, ?, ?, ?)
+            ''', (youtube_link, competition_type, player1, player2))
     except Exception as e:
         st.error(f"Failed to add data: {e}")
-
 
 def view_all_data():
     try:
         c.execute('SELECT youtube_link, competition_type, player1, player2, created_at FROM match_data ORDER BY created_at DESC')
-        data = c.fetchall()
-        return data
+        return c.fetchall()
     except Exception as e:
         st.error(f"Failed to fetch data: {e}")
         return []
 
-
-
 def extract_youtube_id(url):
     regex = r"(?<=v=)[^&#]+"
     matches = re.search(regex, url)
-
     if 'youtube' in url or 'youtu.be' in url:
         return url.split('/')[-1]
-
-
-
     if matches:
         return matches.group(0)
-        return None
-
-
+    return None
 
 def main_page():
     st.title('FantaPesAmici TV')
     st.markdown("---")
 
-    # Display filter options heading in bold and larger font
-    st.markdown("""
-        <h2 style='font-weight: bold; font-size: 24px;'>Opzioni di Filtro</h2>
-        """, unsafe_allow_html=True)
+    st.markdown("<h2 style='font-weight: bold; font-size: 24px;'>Opzioni di Filtro</h2>", unsafe_allow_html=True)
 
-    # Load competitions and teams
     competitions = load_competitions()
     team_names = [team[0] for team in load_teams()]
 
-    # Filtering options
     selected_player = st.selectbox("Select Player", ['All'] + team_names, index=0)
     selected_competition = st.selectbox("Select Competition Type", ['All'] + competitions, index=0)
-
     st.markdown("---")
 
-
-    # Fetch data based on filters
     data = view_filtered_data(selected_player, selected_competition)
-
-
-
     team_dict = dict(load_teams())
 
-    for index, entry in enumerate(data):
+    for entry in data:
         youtube_id = extract_youtube_id(entry[0])
-        competition_type, player1, player2, created_at = entry[1], entry[2], entry[3], entry[4]
         if youtube_id:
-            logo1 = team_dict.get(player1, "")
-            logo2 = team_dict.get(player2, "")
-            # HTML for displaying players and match type
+            logo1 = team_dict.get(entry[2], "")
+            logo2 = team_dict.get(entry[3], "")
             players_matchup_html = f"""
             <div style="color: black; font-size: 18px; margin-bottom: 10px;">
-                {competition_type}
+                {entry[1]}
             </div>
             <div style="display: flex; align-items: center; font-size: 20px; font-weight: bold; margin-bottom: 20px;">
-                <img src="{logo1}" alt="{player1}" style="width: 50px; height: auto; margin-right: 10px;">
-                <span style="color: red;">{player1}</span>
+                <img src="{logo1}" alt="{entry[2]}" style="width: 50px; height: auto; margin-right: 10px;">
+                <span style="color: red;">{entry[2]}</span>
                 <span style="color: black; margin: 0 5px;">Vs</span>
-                <span style="color: red;">{player2}</span>
-                <img src="{logo2}" alt="{player2}" style="width: 50px; height: auto; margin-left: 10px;">
+                <span style="color: red;">{entry[3]}</span>
+                <img src="{logo2}" alt="{entry[3]}" style="width: 50px; height: auto; margin-left: 10px;">
             </div>
             """
             st.markdown(players_matchup_html, unsafe_allow_html=True)
-            
-            # Embed YouTube video with custom margin for spacing
             youtube_iframe = f"""
             <div style="margin-bottom: 20px;">
                 <iframe width="560" height="315" src="https://www.youtube.com/embed/{youtube_id}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>
-            {created_at}
+            {entry[4]}
             """
             st.markdown(youtube_iframe, unsafe_allow_html=True)
-            st.markdown("---")  # Horizontal line for separation between entries
+            st.markdown("---")
 
 def view_filtered_data(player, competition):
     query = 'SELECT youtube_link, competition_type, player1, player2, created_at FROM match_data'
     params = []
-    
     conditions = []
     if player != 'All':
         conditions.append('(player1 = ? OR player2 = ?)')
@@ -218,27 +177,18 @@ def view_filtered_data(player, competition):
     if competition != 'All':
         conditions.append('competition_type = ?')
         params.append(competition)
-
     if conditions:
         query += ' WHERE ' + ' AND '.join(conditions)
-    
     query += ' ORDER BY created_at DESC'
-
     c.execute(query, params)
     return c.fetchall()
 
-
-
-
 def get_competition_stats():
     try:
-        # Define lists for each category
         lega_competitions = ["LEGA A", "LEGA B", "LEGA C"]
         final_eight_competitions = ["Final Eight Gold", "Final Eight Silver", "Final Eight Bronze", "GOLDEN FINAL", "SILVER FINAL", "BRONZE FINAL"]
         amichevole = ["Amichevole"]
         coppa_delle_leghe = ["COPPA DELLE LEGHE"]
-
-        # SQL query that filters for specific competitions, ensuring placeholders match the number of competitions
         c.execute('''
             SELECT player1, competition_type, COUNT(*) as count
             FROM match_data
@@ -246,23 +196,15 @@ def get_competition_stats():
             GROUP BY player1, competition_type
             ORDER BY player1
         ''', (*lega_competitions, *final_eight_competitions, *amichevole, *coppa_delle_leghe))
-
-        raw_data = c.fetchall()
-        return raw_data
+        return c.fetchall()
     except Exception as e:
         st.error(f"Failed to fetch competition stats: {e}")
         return []
 
-
 def stats_page():
     st.title('Statistiche delle Dirette Stagione 1')
-
     data = get_competition_stats()
     if data:
-        # Prepare a dictionary to hold the data in a structured format
-        from collections import defaultdict
-        import pandas as pd
-
         competition_counts = defaultdict(lambda: defaultdict(int))
         for player, competition, count in data:
             category = None
@@ -276,53 +218,38 @@ def stats_page():
                 category = "COPPA DELLE LEGHE"
             if category:
                 competition_counts[player][category] += count
-
-        # Convert the dictionary to a DataFrame for display
         df = pd.DataFrame.from_dict(competition_counts, orient='index').fillna(0).astype(int)
         df.index.name = 'Player Name'
         df.columns.name = 'Competition'
-
-        # Show the DataFrame as a table in Streamlit
         st.table(df)
     else:
         st.write("No data available.")
 
-
-
 def form_page():
     st.title('Match Submission Form')
-    competitions = load_competitions()  # Load competition names
+    competitions = load_competitions()
     youtube_link = st.text_input('YouTube Link for the Online Match', key='youtube_link')
-    
     with st.form(key='match_form'):
-        competition_type = st.selectbox('Type of Competition', competitions)  # Use loaded competitions for dropdown
+        competition_type = st.selectbox('Type of Competition', competitions)
         team_names = [team[0] for team in load_teams()]
         player1 = st.selectbox('Casa', team_names)
         player2 = st.selectbox('Trasferta', team_names)
         submitted = st.form_submit_button('Submit')
-        
         if submitted:
-            if not youtube_link.strip():  # Check if YouTube link is empty or just whitespace
+            if not youtube_link.strip():
                 st.error('Please enter a valid YouTube link.')
             else:
                 add_data(youtube_link, competition_type, player1, player2)
                 st.success('Submission successful!')
 
-
-
 def irpef_calculation_page():
     st.title('Calcolo IRPEF')
-    team_names = [team[0] for team in load_teams()]  # Load team names from the clubs.txt file
+    team_names = [team[0] for team in load_teams()]
     team_name = st.selectbox('Nome della squadra', team_names)
     average_age = st.number_input('Età media della squadra', min_value=0.0, format="%.1f")
-    
-    # Input for salary
     salary_input = st.text_input("Monte ingaggio della squadra (€)", value="")
-
-    # Format input on the fly
     if salary_input:
         try:
-            # Remove any non-numeric characters for calculation purposes
             salary = float(salary_input.replace(".", "").replace(",", ""))
             formatted_salary = f"{salary:,.0f}".replace(",", ".")
             st.write("Monte ingaggio inserito: €" + formatted_salary)
@@ -330,10 +257,7 @@ def irpef_calculation_page():
             st.error("Inserire un numero valido.")
     else:
         salary = 0
-
-    calculate_button = st.button('Calcola')
-
-    if calculate_button:
+    if st.button('Calcola'):
         tax_rate = 0
         if average_age <= 22:
             tax_rate = 0
@@ -347,72 +271,50 @@ def irpef_calculation_page():
             tax_rate = 20
         elif average_age > 26.1:
             tax_rate = 25
-
         tax_to_pay = (tax_rate / 100) * salary
         st.success(f"La tua IRPEF da pagare ammonta a €{tax_to_pay:,.0f} ({tax_rate}% del monte ingaggio).".replace(",", "."))
 
-
 def delete_youtube_entry(youtube_link):
-    # Assuming there is a column named 'youtube_link' in your table
-    conn = sqlite3.connect('matches.db')
-    c = conn.cursor()
-    # Use parameter substitution to safely delete the entry
-    c.execute("DELETE FROM match_data WHERE youtube_link=?", (youtube_link,))
-    conn.commit()
-    conn.close()
-    st.success("Entry deleted successfully.")
-
-
+    try:
+        with conn:
+            c.execute("DELETE FROM match_data WHERE youtube_link=?", (youtube_link,))
+        st.success("Entry deleted successfully.")
+    except Exception as e:
+        st.error(f"Failed to delete entry: {e}")
 
 def delete_invalid_entries():
     try:
-        # SQL DELETE statement to remove rows where the YouTube link is empty or not valid
-        c.execute("DELETE FROM match_data WHERE youtube_link IS NULL OR youtube_link = '' OR youtube_link NOT LIKE '%youtube.com/%'")
-        conn.commit()
+        with conn:
+            c.execute("DELETE FROM match_data WHERE youtube_link IS NULL OR youtube_link = '' OR youtube_link NOT LIKE '%youtube.com/%'")
         st.success("Invalid entries have been successfully deleted.")
     except Exception as e:
         st.error(f"Failed to delete invalid entries: {e}")
 
-
-# Define the correct password
-CORRECT_PASSWORD = 'admin'
-
-
 def admin_page():
     st.title("Admin Tools")
-
-    # Allow admins to delete specific YouTube entries
     youtube_link = st.text_input("Enter the YouTube link to delete:")
     if st.button("Delete YouTube Entry"):
         delete_youtube_entry(youtube_link)
-
-
     elif st.sidebar.button("View All Data"):
         data = view_all_data()
-        st.write(data)  # This will display the data in the main page area.
-        
+        st.write(data)
 
 # Database file path
 db_file_path = 'matches.db'
 
-# Add to the sidebar navigation
+# Sidebar Navigation
 st.sidebar.title('Menu')
 page = st.sidebar.radio(' ', ('Live Streaming', 'Carica Link', 'Statistiche', 'Calcolo IRPEF'))
-
-# Add to the sidebar navigation
 st.sidebar.title('Admin Tools')
-# Password input by the user
 password = st.sidebar.text_input("Enter password:", type='password')
 
-CORRECT_PASSWORD = "admin"  # You need to define this variable
+CORRECT_PASSWORD = "admin"
 
 if password == CORRECT_PASSWORD:
     admin_page()
-
-    # Check if the file exists before creating a download button
     if os.path.exists(db_file_path):
         with open(db_file_path, "rb") as fp:
-            btn = st.sidebar.download_button(
+            st.sidebar.download_button(
                 label="Download Database",
                 data=fp,
                 file_name="matches.db",
@@ -422,9 +324,6 @@ else:
     if password:
         st.sidebar.error("Password incorrect, please try again.")
 
-
-
-# Add to the main control flow in your Streamlit app
 if page == 'Live Streaming':
     main_page()
 elif page == 'Carica Link':
@@ -433,5 +332,3 @@ elif page == 'Statistiche':
     stats_page()
 elif page == 'Calcolo IRPEF':
     irpef_calculation_page()
-
-
