@@ -8,45 +8,45 @@ import pandas as pd
 # CSS Customization
 def local_css():
     st.markdown(
-        f"""
+        """
         <style>
-            .stApp {{
+            .stApp {
                 --sidebar-bg-color: black;
-            }}
-            .stSidebar .css-1d391kg, .stSidebar .css-1l02zno, .stSidebar .st-bx, .stSidebar .st-cx {{
+            }
+            .stSidebar .css-1d391kg, .stSidebar .css-1l02zno, .stSidebar .st-bx, .stSidebar .st-cx {
                 color: white;
-            }}
-            .logo {{
+            }
+            .logo {
                 height: 200px;
                 width: auto;
                 display: block;
                 margin: 20px auto;
-            }}
-            @media (max-width: 768px) {{
-                .stApp {{
+            }
+            @media (max-width: 768px) {
+                .stApp {
                     --sidebar-bg-color: #333;
-                }}
-                .logo {{
+                }
+                .logo {
                     height: 150px;
-                }}
-            }}
-            @media (max-width: 480px) {{
-                .stApp {{
+                }
+            }
+            @media (max-width: 480px) {
+                .stApp {
                     --sidebar-bg-color: #666;
-                }}
-                .stSidebar .css-1d391kg, .stSidebar .css-1l02zno, .stSidebar .st-bx, .stSidebar .st-cx {{
+                }
+                .stSidebar .css-1d391kg, .stSidebar .css-1l02zno, .stSidebar .st-bx, .stSidebar .st-cx {
                     color: #ccc;
-                }}
-                .logo {{
+                }
+                .logo {
                     height: 100px;
-                }}
-            }}
+                }
+            }
         </style>
         """,
         unsafe_allow_html=True
     )
     st.sidebar.markdown(
-        f"""
+        """
         <img src="https://www.fantamanagerleague.it/leghe/fantapesamici/images/headerlogo.PNG" alt="Logo" class="logo">
         """,
         unsafe_allow_html=True
@@ -308,7 +308,7 @@ page = st.sidebar.radio(' ', ('Live Streaming', 'Carica Link', 'Statistiche', 'C
 st.sidebar.title('Admin Tools')
 password = st.sidebar.text_input("Enter password:", type='password')
 
-CORRECT_PASSWORD = "admin"
+CORRECT_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
 
 if password == CORRECT_PASSWORD:
     admin_page()
